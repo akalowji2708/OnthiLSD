@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Lịch sử Đảng Cộng sản Việt Nam</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; }
+.header { background: #b71c1c; color: white; padding: 1.2rem 1.5rem; text-align: center; }
+.header h1 { font-size: 1.3rem; font-weight: 600; margin-bottom: 0.3rem; }
+.header p { font-size: 0.85rem; opacity: 0.85; }
+.container { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem; }
+
+/* HOME */
+#home .card { background: white; border-radius: 12px; border: 0.5px solid #ddd; padding: 1.5rem; margin-bottom: 1rem; }
+#home .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 0.6rem; color: #b71c1c; }
+#home .card p { font-size: 0.88rem; color: #555; line-height: 1.6; margin-bottom: 1rem; }
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1.2rem; }
+.stat-box { background: #fff8f8; border-radius: 8px; border: 0.5px solid #f0c0c0; padding: 0.8rem; text-align: center; }
+.stat-box .num { font-size: 1.5rem; font-weight: 600; color: #b71c1c; }
+.stat-box .lbl { font-size: 0.75rem; color: #777; margin-top: 2px; }
+.btn { display: inline-block; padding: 0.65rem 1.4rem; border-radius: 8px; border: none; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.15s; }
+.btn-primary { background: #b71c1c; color: white; }
+.btn-primary:hover { background: #9a1515; }
+.btn-secondary { background: white; color: #b71c1c; border: 1px solid #b71c1c; margin-left: 0.6rem; }
+.btn-secondary:hover { background: #fff0f0; }
+.btn-sm { padding: 0.4rem 0.8rem; font-size: 0.82rem; }
+.chapter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.chapter-btn { background: white; border: 0.5px solid #ddd; border-radius: 10px; padding: 1rem; text-align: left; cursor: pointer; transition: all 0.15s; }
+.chapter-btn:hover { border-color: #b71c1c; background: #fff8f8; }
+.chapter-btn .ch-title { font-size: 0.82rem; font-weight: 600; color: #b71c1c; margin-bottom: 0.3rem; }
+.chapter-btn .ch-sub { font-size: 0.78rem; color: #666; line-height: 1.4; }
+.chapter-btn .ch-count { font-size: 0.75rem; color: #999; margin-top: 0.4rem; }
+.weak-section { margin-top: 1rem; }
+.weak-item { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.8rem; background: #fff8f8; border-radius: 8px; margin-bottom: 0.4rem; font-size: 0.83rem; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+.badge-red { background: #fde8e8; color: #b71c1c; }
+.badge-green { background: #e8f5e9; color: #2e7d32; }
+.badge-orange { background: #fff3e0; color: #e65100; }
+
+/* QUIZ */
+#quiz { display: none; }
+.progress-bar { background: #e0e0e0; border-radius: 10px; height: 6px; margin-bottom: 1.2rem; overflow: hidden; }
+.progress-fill { background: #b71c1c; height: 100%; border-radius: 10px; transition: width 0.3s; }
+.quiz-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: 0.83rem; color: #666; }
+.question-card { background: white; border-radius: 12px; border: 0.5px solid #ddd; padding: 1.4rem; margin-bottom: 1rem; }
+.q-chapter { font-size: 0.75rem; color: #b71c1c; font-weight: 600; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; }
+.q-text { font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.2rem; font-weight: 500; }
+.option { display: block; padding: 0.7rem 1rem; border: 0.5px solid #ddd; border-radius: 8px; margin-bottom: 0.5rem; cursor: pointer; font-size: 0.88rem; line-height: 1.5; transition: all 0.15s; background: white; width: 100%; text-align: left; }
+.option:hover:not(.disabled) { border-color: #b71c1c; background: #fff8f8; }
+.option.correct { border-color: #2e7d32; background: #e8f5e9; color: #1b5e20; }
+.option.wrong { border-color: #c62828; background: #fde8e8; color: #b71c1c; }
+.option.disabled { cursor: default; }
+.explain { background: #f9f5e7; border-left: 3px solid #f9a825; border-radius: 0 8px 8px 0; padding: 0.8rem 1rem; font-size: 0.84rem; line-height: 1.6; color: #5d4037; margin-top: 0.8rem; display: none; }
+.quiz-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; }
+
+/* RESULT */
+#result { display: none; }
+.result-card { background: white; border-radius: 12px; border: 0.5px solid #ddd; padding: 1.5rem; margin-bottom: 1rem; text-align: center; }
+.score-circle { width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 1.8rem; font-weight: 700; }
+.score-pass { background: #e8f5e9; color: #2e7d32; border: 3px solid #2e7d32; }
+.score-fail { background: #fde8e8; color: #b71c1c; border: 3px solid #b71c1c; }
+.result-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 1rem 0; }
+.result-stat { padding: 0.8rem; background: #f9f9f9; border-radius: 8px; }
+.result-stat .n { font-size: 1.3rem; font-weight: 600; }
+.result-stat .l { font-size: 0.78rem; color: #777; }
+.green { color: #2e7d32; }
+.red { color: #b71c1c; }
+.orange { color: #e65100; }
+.weak-list { text-align: left; margin-top: 1rem; }
+.weak-q { background: #fff8f8; border-radius: 8px; padding: 0.8rem; margin-bottom: 0.5rem; font-size: 0.83rem; border-left: 3px solid #ef9a9a; }
+.weak-q .wq-text { font-weight: 500; margin-bottom: 0.3rem; }
+.weak-q .wq-ans { color: #2e7d32; font-size: 0.8rem; }
+.mode-label { font-size: 0.78rem; padding: 3px 10px; border-radius: 20px; background: #e3f2fd; color: #1565c0; margin-left: 0.4rem; }
+
+@media (max-width: 500px) {
+  .stats-row { grid-template-columns: repeat(2, 1fr); }
+  .chapter-grid { grid-template-columns: 1fr; }
+  .result-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* MODAL */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:100; align-items:center; justify-content:center; }
+.modal-overlay.active { display:flex; }
+.modal-box { background:white; border-radius:14px; padding:1.6rem 1.4rem; width:90%; max-width:380px; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+.modal-box h3 { font-size:1rem; font-weight:600; color:#b71c1c; margin-bottom:0.3rem; }
+.modal-box p { font-size:0.83rem; color:#666; margin-bottom:1.2rem; }
+.modal-choices { display:flex; flex-direction:column; gap:0.6rem; }
+.modal-choice { padding:0.85rem 1rem; border-radius:10px; border:1px solid #e0e0e0; cursor:pointer; text-align:left; background:white; transition:all 0.15s; }
+.modal-choice:hover { border-color:#b71c1c; background:#fff8f8; }
+.modal-choice .mc-title { font-size:0.9rem; font-weight:600; color:#1a1a1a; margin-bottom:0.2rem; }
+.modal-choice .mc-sub { font-size:0.78rem; color:#888; }
+.modal-cancel { margin-top:0.8rem; text-align:center; }
+.modal-cancel button { background:none; border:none; color:#999; font-size:0.83rem; cursor:pointer; padding:0.3rem 0.6rem; }
+.modal-cancel button:hover { color:#555; }
+.weak-chapter-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.5rem; margin-bottom:1rem; }
+.wc-btn { padding:0.65rem 0.8rem; border-radius:8px; border:1px solid #e0e0e0; background:white; cursor:pointer; text-align:left; transition:all 0.15s; }
+.wc-btn:hover { border-color:#b71c1c; background:#fff8f8; }
+.wc-btn .wc-title { font-size:0.83rem; font-weight:600; color:#b71c1c; }
+.wc-btn .wc-count { font-size:0.75rem; color:#999; margin-top:2px; }
+.wc-btn.wc-all { grid-column:1/-1; border-color:#b71c1c; background:#fff8f8; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>Ôn tập Lịch sử Đảng Cộng sản Việt Nam</h1>
+  <p>Giáo trình 2021 - Bộ câu hỏi trắc nghiệm</p>
+</div>
+<div class="container">
+
+<!-- HOME -->
+<div id="home">
+  <div class="card">
+    <h2>Thống kê</h2>
+    <div class="stats-row">
+      <div class="stat-box"><div class="num" id="total-q">0</div><div class="lbl">Tổng câu hỏi</div></div>
+      <div class="stat-box"><div class="num" id="done-q">0</div><div class="lbl">Đã làm</div></div>
+      <div class="stat-box"><div class="num" id="weak-count">0</div><div class="lbl">Câu sai</div></div>
+      <div class="stat-box"><div class="num" id="acc-pct">—</div><div class="lbl">Độ chính xác</div></div>
+    </div>
+    <!-- Kết quả phiên vừa rồi -->
+    <div id="last-session-card" style="display:none;margin-bottom:1rem;padding:0.75rem 1rem;background:#f0faf0;border-radius:8px;border:0.5px solid #a5d6a7;font-size:0.83rem;color:#2e7d32;">
+      <strong>Kết quả phiên vừa rồi:</strong>
+      &nbsp;✓ Đúng <strong id="ls-correct">0</strong> &nbsp;✗ Sai <strong id="ls-wrong">0</strong> &nbsp;/ <strong id="ls-total">0</strong> câu &nbsp;→ <strong id="ls-pct">0%</strong>
+    </div>
+    <button class="btn btn-primary" onclick="startQuiz('all')">Thi thử</button>
+    <button class="btn btn-secondary" onclick="openWeakModal()" id="weak-btn" style="display:none">Ôn câu còn sai</button>
+  </div>
+
+  <div class="card">
+    <h2>Ôn/Thi theo chương</h2>
+    <div class="chapter-grid">
+      <div class="chapter-btn" onclick="openChapterModal('intro')">
+        <div class="ch-title">Chương nhập môn</div>
+        <div class="ch-sub">Đối tượng, chức năng, phương pháp nghiên cứu LSĐCSVN</div>
+        <div class="ch-count" id="cnt-intro">— câu</div>
+      </div>
+      <div class="chapter-btn" onclick="openChapterModal('ch1')">
+        <div class="ch-title">Chương 1 (1930–1945)</div>
+        <div class="ch-sub">Đảng ra đời và lãnh đạo đấu tranh giành chính quyền</div>
+        <div class="ch-count" id="cnt-ch1">— câu</div>
+      </div>
+      <div class="chapter-btn" onclick="openChapterModal('ch2')">
+        <div class="ch-title">Chương 2 (1945–1975)</div>
+        <div class="ch-sub">Hai cuộc kháng chiến chống ngoại xâm, thống nhất đất nước</div>
+        <div class="ch-count" id="cnt-ch2">— câu</div>
+      </div>
+      <div class="chapter-btn" onclick="openChapterModal('ch3')">
+        <div class="ch-title">Chương 3 (1975–nay)</div>
+        <div class="ch-sub">Cả nước quá độ lên CNXH và công cuộc Đổi mới</div>
+        <div class="ch-count" id="cnt-ch3">— câu</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="weak-card" style="display:none">
+    <h2>Câu hỏi cần ôn tập (<span id="weak-num">0</span> câu)</h2>
+    <div id="weak-list" class="weak-section"></div>
+    <button class="btn btn-primary btn-sm" onclick="startQuiz('weak')" style="margin-top:0.8rem">Ôn luyện ngay</button>
+  </div>
+</div>
+
+<!-- QUIZ -->
+<div id="quiz">
+  <div class="quiz-meta">
+    <span id="quiz-title">Quiz</span>
+    <span id="quiz-prog">Câu 1 / 50</span>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="prog-fill"></div></div>
+  <div class="question-card" id="qcard">
+    <div class="q-chapter" id="q-chapter"></div>
+    <div class="q-text" id="q-text"></div>
+    <div id="options"></div>
+    <div class="explain" id="explain"></div>
+  </div>
+  <div class="quiz-nav">
+    <button class="btn btn-secondary" onclick="goHome()">← Thoát</button>
+    <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" style="display:none">Câu tiếp →</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result">
+  <div class="result-card">
+    <div class="score-circle" id="score-circle"></div>
+    <h2 id="result-title" style="margin-bottom:0.3rem"></h2>
+    <p id="result-sub" style="color:#666;font-size:0.88rem"></p>
+    <div class="result-stats">
+      <div class="result-stat"><div class="n green" id="r-correct">0</div><div class="l">Đúng</div></div>
+      <div class="result-stat"><div class="n red" id="r-wrong">0</div><div class="l">Sai</div></div>
+      <div class="result-stat"><div class="n orange" id="r-pct">0%</div><div class="l">Điểm</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="new-weak-card" style="display:none">
+    <h2>Câu sai lần này — đã thêm vào danh sách ôn tập</h2>
+    <div id="new-weak-list" class="weak-list"></div>
+  </div>
+
+  <div style="text-align:center;padding:1rem 0;">
+    <button class="btn btn-primary" onclick="startQuiz(lastMode)">Thi lại</button>
+    <button class="btn btn-secondary" onclick="goHome()">Về trang chủ</button>
+    <button class="btn btn-secondary" onclick="startQuiz('weak')" id="res-weak-btn" style="display:none">Ôn câu còn sai</button>
+  </div>
+</div>
+
+</div><!-- .container -->
+
+<!-- MODAL: Chọn chế độ chương -->
+<div class="modal-overlay" id="chapter-modal" onclick="closeChapterModal(event)">
+  <div class="modal-box">
+    <h3 id="modal-chapter-title">Chương nhập môn</h3>
+    <p id="modal-chapter-sub">Chọn chế độ học</p>
+    <div class="modal-choices">
+      <div class="modal-choice" onclick="startFromModal('study')">
+        <div class="mc-title">Ôn theo chương</div>
+        <div class="mc-sub">Làm toàn bộ câu hỏi trong chương</div>
+      </div>
+      <div class="modal-choice" onclick="startFromModal('exam')">
+        <div class="mc-title">Thi theo chương</div>
+        <div class="mc-sub">50 câu ngẫu nhiên</div>
+      </div>
+    </div>
+    <div class="modal-cancel"><button onclick="closeChapterModal()">Huỷ</button></div>
+  </div>
+</div>
+
+<!-- MODAL: Ôn câu sai theo chương -->
+<div class="modal-overlay" id="weak-modal" onclick="closeWeakModal(event)">
+  <div class="modal-box">
+    <h3>Ôn câu còn sai</h3>
+    <p>Chọn phạm vi câu sai muốn ôn lại</p>
+    <div class="weak-chapter-grid" id="weak-chapter-grid"></div>
+    <div class="modal-cancel"><button onclick="closeWeakModal()">Huỷ</button></div>
+  </div>
+</div>
+
+<script>
+const CHAPTERS = {
+  intro: "Chương nhập môn",
+  ch1: "Chương 1 (1930–1945)",
+  ch2: "Chương 2 (1945–1975)",
+  ch3: "Chương 3 (1975–nay)"
+};
+
+const ALL_QUESTIONS = [
+// ===== CHƯƠNG NHẬP MÔN =====
+{id:'nm01',ch:'intro',q:'Đảng Cộng sản Việt Nam do ai sáng lập?',o:['Trần Phú','Chủ tịch Hồ Chí Minh','Lê Hồng Phong','Lê Duẩn'],a:1},
+{id:'nm02',ch:'intro',q:'Đảng Cộng sản Việt Nam do Chủ tịch Hồ Chí Minh sáng lập vào thời gian nào?',o:['3/2/1930','7/2/1930','24/2/1930','2/3/1930'],a:0},
+{id:'nm03',ch:'intro',q:'Điền từ còn thiếu: "Đảng lấy chủ nghĩa Mác - Lênin và tư tưởng Hồ Chí Minh làm nền tảng tư tưởng, kim chỉ nam cho hành động, lấy (_____) làm nguyên tắc tổ chức cơ bản"',o:['Tập trung dân chủ','Tự phê bình và phê bình','Kỷ luật nghiêm minh, tự giác','Đoàn kết thống nhất trong Đảng'],a:0},
+{id:'nm04',ch:'intro',q:'Đảng Cộng sản Việt Nam là đội tiên phong của giai cấp nào?',o:['Giai cấp nông dân','Giai cấp địa chủ phong kiến','Giai cấp công nhân; nhân dân lao động và của dân tộc Việt Nam','Giai cấp tư sản'],a:2},
+{id:'nm05',ch:'intro',q:'Nền tảng tư tưởng, kim chỉ nam cho mọi hành động của Đảng là?',o:['Tư tưởng Hồ Chí Minh và đường lối cách mạng của Đảng','Chủ nghĩa xã hội và chủ nghĩa yêu nước','Chủ nghĩa duy vật biện chứng và chủ nghĩa duy vật lịch sử','Chủ nghĩa Mác – Lênin và tư tưởng Hồ Chí Minh'],a:3},
+{id:'nm06',ch:'intro',q:'Thời gian nào môn học Lịch sử Đảng được giảng dạy, học tập chính thức trong các trường đại học, cao đẳng, trung cấp chuyên nghiệp?',o:['Từ đầu thế kỷ XX','Từ cuối thế kỷ XX','Từ những năm 60 của thế kỷ XX','Sau khi thống nhất đất nước và bước vào thời kỳ đổi mới năm 1986'],a:2},
+{id:'nm07',ch:'intro',q:'Cơ quan chuyên trách nghiên cứu, biên soạn lịch sử Đảng là Ban nghiên cứu Lịch sử Đảng Trung ương (nay là Viện lịch sử Đảng) được thành lập vào năm nào?',o:['1962','1965','1970','1975'],a:0},
+{id:'nm08',ch:'intro',q:'Ai là người đã công bố tác phẩm Sơ thảo lịch sử phong trào cộng sản Đông Dương?',o:['Hồng Thế Công (tức Hà Huy Tập)','Lê Hồng Phong','Trần Phú','Võ Nguyên Giáp'],a:0},
+{id:'nm09',ch:'intro',q:'Môn học Lịch sử Đảng Cộng sản Việt Nam có đối tượng nghiên cứu là gì?',o:['Các cán bộ, đảng viên Đảng Cộng sản Việt Nam','Những mặt hạn chế trong quá trình lãnh đạo của Đảng','Sự ra đời, phát triển và hoạt động lãnh đạo của Đảng qua các thời kỳ lịch sử','Các văn kiện của Đảng chuẩn bị được lưu hành'],a:2},
+{id:'nm10',ch:'intro',q:'Lịch sử Đảng Cộng sản Việt Nam với tư cách là một ngành khoa học, nghiên cứu những vấn đề gì?',o:['Các sự kiện lịch sử Đảng, hệ thống tổ chức Đảng','Cương lĩnh, đường lối, chủ trương, chính sách','Quá trình chỉ đạo, tổ chức thực tiễn trong tiến trình cách mạng','Cả A, B và C'],a:3},
+{id:'nm11',ch:'intro',q:'Môn học Lịch sử Đảng nghiên cứu quá trình Đảng lãnh đạo cách mạng giải phóng dân tộc, xây dựng và phát triển đất nước bằng?',o:['Các sự kiện lịch sử Đảng, hệ thống tổ chức Đảng','Cương lĩnh, đường lối, chủ trương, chính sách','Thắng lợi, thành tựu, kinh nghiệm, bài học của cách mạng Việt Nam','Tất cả các đáp án trên'],a:1},
+{id:'nm12',ch:'intro',q:'Điều kiện trước hết quyết định thắng lợi của cách mạng là gì?',o:['Có lực lượng vũ trang hùng mạnh','Có sự ủng hộ của quốc tế','Có Cương lĩnh, đường lối đúng đắn','Có sự giúp đỡ về kinh tế từ bên ngoài'],a:2},
+{id:'nm13',ch:'intro',q:'Nghiên cứu, học tập Lịch sử Đảng để nêu cao hiểu biết về?',o:['Công tác xây dựng Đảng trong các thời kỳ lịch sử về chính trị, tư tưởng, tổ chức và đạo đức','Công tác xây dựng Đảng về chính trị','Công tác xây dựng Đảng về tư tưởng','Công tác xây dựng Đảng về tổ chức'],a:0},
+{id:'nm14',ch:'intro',q:'Tư liệu nghiên cứu môn học Lịch sử Đảng Cộng sản Việt Nam chủ yếu bao gồm?',o:['Tư liệu văn học và nghệ thuật','Văn kiện Đảng, hồi ký, báo chí, tài liệu lưu trữ chính thống','Truyện dân gian và truyền thuyết','Tư liệu phỏng vấn cá nhân'],a:1},
+{id:'nm15',ch:'intro',q:'Đâu không phải là đối tượng nghiên cứu của khoa học lịch sử Đảng?',o:['Sự kiện lịch sử Đảng','Cương lĩnh, đường lối, chủ trương chính sách lớn của Đảng','Thắng lợi, thành tựu, kinh nghiệm, bài học của cách mạng Việt Nam','Nghệ thuật quân sự'],a:3},
+{id:'nm16',ch:'intro',q:'Đảng Cộng sản Việt Nam đã ban hành bao nhiêu cương lĩnh từ khi thành lập cho đến nay?',o:['2','3','4','5'],a:3,e:'Đảng đã ban hành 5 cương lĩnh: 1930, 1951, 1960, 1976 và 1991 (bổ sung, phát triển năm 2011).'},
+{id:'nm17',ch:'intro',q:'Là một ngành của khoa học lịch sử, Lịch sử Đảng Cộng sản Việt Nam có các chức năng gì?',o:['Chức năng tuyên truyền, phổ cập, giáo huấn và phổ quát','Chức năng giáo dục, sang lọc, tuyên truyền và tìm kiếm','Chức năng nhận thức, giáo dục, dự báo và phê phán','Chức năng nhận thức, điều tiết, chọn lọc và tìm kiếm'],a:2},
+{id:'nm18',ch:'intro',q:'Khoa học lịch sử Đảng Cộng sản Việt Nam giáo dục sâu sắc tinh thần yêu nước, ý thức, niềm tự hào, tự tôn, ý chí tự lực, tự cường dân tộc. Đây là chức năng gì của môn học?',o:['Chức năng giáo dục','Chức năng nhận thức','Chức năng dự báo và phê phán','Chức năng tuyên truyền'],a:0},
+{id:'nm19',ch:'intro',q:'Qua việc học Lịch sử Đảng Cộng sản Việt Nam, giúp chúng ta củng cố niềm tin vào Đảng, vào chế độ và con đường đi lên chủ nghĩa xã hội do Đảng lãnh đạo. Đây là chức năng gì của môn học?',o:['Chức năng dự báo và phê phán','Chức năng nhận thức','Không đáp án nào đúng','Chức năng giáo dục'],a:3},
+{id:'nm20',ch:'intro',q:'Học lịch sử Đảng Cộng sản Việt Nam để biết được đầy đủ hơn về lịch sử lãnh đạo, đấu tranh và cầm quyền của Đảng. Đây là chức năng gì của môn học?',o:['Chức năng dự báo và phê phán','Chức năng giáo dục','Không đáp án nào đúng','Chức năng nhận thức'],a:3},
+{id:'nm21',ch:'intro',q:'Nội dung nào sau đây không phải là chức năng của khoa học Lịch sử Đảng?',o:['Chức năng giáo dục','Chức năng nhận thức','Chức năng dự báo và phê phán','Chức năng điều chỉnh hành vi'],a:3},
+{id:'nm22',ch:'intro',q:'Chức năng của môn học Lịch sử Đảng Cộng sản Việt Nam không bao gồm nội dung nào sau đây?',o:['Giáo dục truyền thống cách mạng','Nghiên cứu mô hình chính quyền tư sản','Bồi dưỡng niềm tin vào sự nghiệp cách mạng','Trang bị kiến thức về các giai đoạn phát triển của Đảng'],a:1},
+{id:'nm23',ch:'intro',q:'Cùng với hai chức năng cơ bản của sử học là nhận thức và giáo dục, khoa học lịch sử Đảng còn có chức năng nào?',o:['Chức năng dự báo và phê phán','Chức năng tuyên truyền','Nghiên cứu mô hình chính quyền tư sản','Chức năng điều chỉnh hành vi'],a:0},
+{id:'nm24',ch:'intro',q:'Một trong những nhiệm vụ hàng đầu khi nghiên cứu khoa học lịch sử Đảng Cộng sản Việt Nam là?',o:['Làm cho người học hiểu được quyền lực của Đảng, từ đó thêm trung thành với đường lối của Đảng','Chọn lọc ra những sự kiện lịch sử nổi bật để tái hiện lại sự thành công trong quá trình lãnh đạo của Đảng','Tìm hiểu về lịch sử sự ra đời của đảng cộng sản trên thế giới','Khẳng định, chứng minh giá trị khoa học của những mục tiêu chiến lược và sách lược cách mạng mà Đảng đề ra trong Cương lĩnh, đường lối'],a:3},
+{id:'nm25',ch:'intro',q:'Những nhiệm vụ chủ yếu của khoa học lịch sử Đảng Cộng sản Việt Nam là?',o:['Trình bày có hệ thống Cương lĩnh, đường lối của Đảng','Tái hiện tiến trình lịch sử lãnh đạo, đấu tranh của Đảng','Tổng kết lịch sử của Đảng, làm rõ vai trò, sức chiến đấu của hệ thống tổ chức Đảng từ Trung ương đến cơ sở','Cả A, B, và C'],a:3},
+{id:'nm26',ch:'intro',q:'Khoa học Lịch sử Đảng thực hiện mấy nhiệm vụ?',o:['1','2','3','4'],a:3,e:'Khoa học Lịch sử Đảng thực hiện 4 nhiệm vụ cơ bản: trình bày Cương lĩnh, tái hiện tiến trình lịch sử, tổng kết lịch sử và khẳng định giá trị khoa học.'},
+{id:'nm27',ch:'intro',q:'Nhiệm vụ nào dưới đây không phải là nhiệm vụ của khoa học Lịch sử Đảng Cộng sản Việt Nam?',o:['Dự báo tương lai của sự phát triển','Trình bày có hệ thống Cương lĩnh, đường lối của Đảng','Tái hiện tiến trình lịch sử lãnh đạo, đấu tranh của Đảng','Tổng kết lịch sử của Đảng, làm rõ vai trò, sức chiến đấu của hệ thống tổ chức Đảng từ Trung ương đến cơ sở'],a:0},
+{id:'nm28',ch:'intro',q:'Từ hiện thực lịch sử và các nguồn tư liệu thành văn và không thành văn, khoa học lịch sử Đảng có nhiệm vụ gì?',o:['Tái hiện tiến trình lịch sử lãnh đạo, đấu tranh của Đảng','Ghi chép lại toàn bộ hoạt động của Đảng theo cảm tính và quan điểm cá nhân','Tuyên truyền một chiều về các thành tựu của Đảng mà không cần căn cứ vào tư liệu','Loại bỏ các sự kiện tiêu cực để lịch sử Đảng chỉ phản ánh mặt tích cực'],a:0},
+{id:'nm29',ch:'intro',q:'Để làm rõ những thành tựu, hạn chế và rút ra bài học kinh nghiệm, khoa học lịch sử Đảng có nhiệm vụ gì sau đây?',o:['Đánh giá toàn bộ lịch sử Đảng','Loại bỏ các sự kiện tiêu cực để lịch sử Đảng chỉ phản ánh mặt tích cực','Tổng kết lịch sử của Đảng','Tổng kết công tác xây dựng Đảng'],a:2},
+{id:'nm30',ch:'intro',q:'Điền từ còn thiếu: "Con đường đi lên chủ nghĩa xã hội của nước ta là phù hợp với (_____) của Việt Nam và (_____) phát triển của lịch sử"',o:['Thực tiễn, xu thế','Truyền thống dân tộc, quy luật','Nguyện vọng nhân dân, con đường','Điều kiện cụ thể, logic tất yếu'],a:0},
+{id:'nm31',ch:'intro',q:'Khoa học Lịch sử Đảng Cộng sản Việt Nam sử dụng phương pháp nghiên cứu cơ bản nào?',o:['Phương pháp điều tra xã hội học','Phương pháp thống kê học','Phương pháp lịch sử và logic','Phương pháp luận của chủ nghĩa Mác – Lênin'],a:2},
+{id:'nm32',ch:'intro',q:'Phương pháp nhằm diễn lại tiến trình phát triển của lịch sử được gọi là phương pháp gì?',o:['Phương pháp lịch sử','Phương pháp lịch sử và phương pháp lôgic','Cả ba đáp án đều sai','Phương pháp logic'],a:0},
+{id:'nm33',ch:'intro',q:'Phương pháp lịch sử là gì?',o:['Phương pháp sử dụng số liệu thống kê để phân tích hiện tượng xã hội','Phương pháp tiếp cận sự vật thông qua phân tích logic và suy diễn','Phương pháp nghiên cứu hiện tượng trong trạng thái tĩnh, không thay đổi theo thời gian','Là các con đường, cách thức tìm hiểu và trình bày quá trình phát triển của các sự vật và hiện tượng nói chung, của lịch sử loài người nói riêng'],a:3},
+{id:'nm34',ch:'intro',q:'Phương pháp logic là gì?',o:['Phương pháp nghiên cứu dựa hoàn toàn vào cảm tính và kinh nghiệm cá nhân','Phương pháp mô tả sự vật hiện tượng như một chuỗi sự kiện xảy ra trong thời gian','Phương pháp nghiên cứu hiện tượng xã hội trong tiến trình lịch sử, qua từng giai đoạn phát triển cụ thể','Phương pháp nghiên cứu các hiện tượng lịch sử trong hình thức tổng quát, nhằm mục đích vạch ra bản chất, quy luật, khuynh hướng chung trong sự vận động của chúng'],a:3},
+{id:'nm35',ch:'intro',q:'Phương pháp nhằm vạch ra bản chất, quy luật, khuynh hướng chung trong sự vận động của các hiện tượng, sự kiện lịch sử gọi là phương pháp gì?',o:['Phương pháp lịch sử','Phương pháp phỏng vấn chuyên gia','Phương pháp lôgic','Phương pháp điều tra xã hội học'],a:2},
+{id:'nm36',ch:'intro',q:'Việc tiến hành thảo luận, trao đổi các vấn đề do giảng viên đưa ra để có thể hiểu rõ hơn nội dung của môn học Lịch sử Đảng Cộng sản Việt Nam thì được gọi là?',o:['Phương pháp làm việc nhóm','Phương pháp làm việc khách quan','Phương pháp làm việc chủ quan','Phương pháp làm việc biện chứng'],a:0},
+{id:'nm37',ch:'intro',q:'Nắm vững phương pháp nào mới có thể hiểu rõ bản chất, nhận thức đúng đắn, giảng dạy và học tập Lịch sử Đảng Cộng sản Việt Nam một cách có hiệu quả?',o:['Phương pháp so sánh','Phương pháp phỏng vấn chuyên gia','Phương pháp lịch sử và phương pháp lôgic','Phương pháp điều tra xã hội học'],a:2},
+{id:'nm38',ch:'intro',q:'Tại sao khi học tập, nghiên cứu lịch sử Đảng Cộng sản Việt Nam cần coi trọng phương pháp tổng kết thực tiễn lịch sử gắn với nghiên cứu lý luận?',o:['Để thấy được sự ưu việt của Đảng Cộng sản Việt Nam so với các Đảng phái ở Phương Tây','Để làm rõ kinh nghiệm, bài học, quy luật phát triển và những vấn đề nhận thức lý luận của cách mạng Việt Nam do Đảng lãnh đạo','Để hiểu được sứ mệnh lịch sử của giai cấp nông dân trong lãnh đạo cách mạng','Để hiểu vì sao cách mạng giải phóng dân tộc ở Việt Nam đi theo con đường cách mạng tư sản'],a:1},
+{id:'nm39',ch:'intro',q:'Phương pháp lịch sử và phương pháp logic có mối quan hệ như thế nào?',o:['Hoàn toàn độc lập, không liên quan đến nhau','Có mối quan hệ mật thiết với nhau và đó là sự thống nhất của phương pháp biện chứng mácxít trong nghiên cứu và nhận thức lịch sử','Phương pháp logic phủ nhận vai trò của phương pháp lịch sử','Phương pháp lịch sử chỉ dùng để kể lại sự kiện, còn phương pháp logic dùng để suy đoán tương lai'],a:1},
+{id:'nm40',ch:'intro',q:'Để vận dụng tốt lý luận vào thực tiễn trong nghiên cứu, giảng dạy và học tập lịch sử Đảng Cộng sản Việt Nam, yếu tố nào sau đây là quan trọng nhất?',o:['Học thuộc các văn kiện, nghị quyết của Đảng','Nắm vững lý luận cơ bản của chủ nghĩa Mác - Lênin, tư tưởng Hồ Chí Minh, luôn liên hệ lý luận với thực tiễn Việt Nam để nhận thức đúng đắn bản chất của mỗi hiện tượng, sự kiện lịch sử','Trình bày các giai đoạn phát triển của Đảng một cách tuần tự, logic','Lựa chọn những thành tựu tiêu biểu để tạo ấn tượng tích cực trong giảng dạy'],a:1},
+{id:'nm41',ch:'intro',q:'Trong phương pháp nghiên cứu, học tập lịch sử Đảng Cộng sản Việt Nam cần dựa trên phương pháp luận khoa học mácxít đồng thời phải nắm vững chủ nghĩa nào để xem xét và nhận thức lịch sử một cách khách quan, trung thực và đúng quy luật?',o:['Chủ nghĩa duy vật và chủ nghĩa duy tâm','Chủ nghĩa duy lý và chủ nghĩa duy vật biện chứng','Chủ nghĩa duy lý và chủ nghĩa duy vật lịch sử','Chủ nghĩa duy vật biện chứng và chủ nghĩa duy vật lịch sử'],a:3},
+{id:'nm42',ch:'intro',q:'Tại sao khi nghiên cứu, học tập Lịch sử Đảng Cộng sản Việt Nam lại cần phải nhận thức và vận dụng chủ nghĩa duy vật lịch sử?',o:['Để thấy được sự ưu việt của Đảng Cộng sản Việt Nam so với các đảng phái ở phương Tây','Để nhận thức tiến trình cách mạng do Đảng Cộng sản Việt Nam lãnh đạo','Để hiểu vì sao cách mạng giải phóng dân tộc ở Việt Nam đi theo con đường tư sản','Để hiểu được sứ mệnh lịch sử của giai cấp nông dân trong lãnh đạo cách mạng'],a:1},
+{id:'nm43',ch:'intro',q:'Nghiên cứu, học tập lịch sử Đảng cần quán triệt tính đảng và tính khoa học. Vậy "tính khoa học" trong nghiên cứu lịch sử Đảng là gì?',o:['Là phát hiện ra giai cấp công nhân là lực lượng xã hội có thể thủ tiêu chủ nghĩa tư bản, xây dựng chủ nghĩa xã hội','Là kết quả nghiên cứu các sự vật, hiện tượng dựa trên kinh nghiệm của nhân dân','Là sự phản ánh kết quả nghiên cứu sự vật, hiện tượng, sự kiện lịch sử phải đạt đến chân lý khách quan dựa trên luận cứ khoa học, tôn trọng hiện thực lịch sử','Là đứng trên lập trường chủ nghĩa Mác - Lênin, tư tưởng Hồ Chí Minh để nhận thức lịch sử một cách khoa học, đúng đắn, luôn luôn kế thừa và phát triển sáng tạo'],a:2},
+{id:'nm44',ch:'intro',q:'Một trong những ý nghĩa của việc nghiên cứu, học tập môn học Lịch sử Đảng Cộng sản Việt Nam đối với sinh viên là?',o:['Tích cực cổ vũ, tham gia vào quá trình "tự diễn biến", "tự chuyển hóa" trong Đảng','Giáo dục lý tưởng, truyền thống đấu tranh của Đảng, bồi đắp niềm tin vào sự lãnh đạo của Đảng','Tham gia xây dựng cải cách, cải tổ Đảng theo mô hình của Đông Âu và Liên Xô','Tin vào sự lãnh đạo của Đảng đưa đất nước tiến nhanh, mạnh, vững chắc theo con đường tư bản chủ nghĩa'],a:1},
+{id:'nm45',ch:'intro',q:'Nghiên cứu, học tập lịch sử Đảng cần quán triệt tính đảng và tính khoa học. Vậy "tính đảng" là gì?',o:['Là chỉ ra sự cần thiết phải thay thế chủ nghĩa tư bản bằng chủ nghĩa xã hội. Đứng trên lập trường của giai cấp tư sản','Là phản ánh đúng khát vọng của nhân dân lao động bị áp bức, khẳng định sứ mệnh lịch sử của giai cấp nông dân','Là đứng trên lập trường của chủ nghĩa Mác-Lênin, tư tưởng Hồ Chí Minh để nhận thức lịch sử một cách khoa học, đúng đắn, luôn luôn kế thừa và phát triển sáng tạo','Là phát hiện ra giai cấp công nhân là lực lượng xã hội có thể thủ tiêu chủ nghĩa tư bản, xây dựng chủ nghĩa xã hội'],a:2},
+{id:'nm46',ch:'intro',q:'Một trong những yêu cầu quan trọng khi nghiên cứu môn học Lịch sử Đảng là gì?',o:['Đặt niềm tin tuyệt đối vào các văn kiện, không cần phân tích','Phê phán tất cả sai lầm của Đảng trong quá khứ','Trung thực, khách quan, toàn diện, có quan điểm Đảng','Dựa hoàn toàn vào nguồn tư liệu nước ngoài để đối chiếu'],a:2},
+{id:'nm47',ch:'intro',q:'Điền từ còn thiếu: "(_____) trong nghiên cứu lịch sử và lịch sử Đảng yêu cầu đứng trên lập trường chủ nghĩa Mác – Lênin, tư tưởng Hồ Chí Minh để nhận thức lịch sử một cách khoa học, đúng đắn"',o:['Tính thực tiễn','Tính khoa học','Tính triết lý','Tính Đảng Cộng sản'],a:3},
+{id:'nm48',ch:'intro',q:'Lý do cần thiết phải học tập môn Lịch sử Đảng Cộng sản Việt Nam trong nhà trường là gì?',o:['Để hiểu thêm về lịch sử cổ đại Việt Nam','Để tìm hiểu các nền văn minh lớn trên thế giới','Để củng cố lòng tin, rèn luyện bản lĩnh chính trị và trách nhiệm công dân','Là môn học bắt buộc nên phải học'],a:2},
+{id:'nm49',ch:'intro',q:'Lịch sử Đảng Cộng sản Việt Nam "là cả một pho lịch sử bằng vàng" là khẳng định của ai?',o:['Hồ Chí Minh','Lê Hồng Phong','Lê Duẩn','Trường Chinh'],a:0},
+{id:'nm50',ch:'intro',q:'Mục tiêu của nghiên cứu, học tập môn học lịch sử Đảng Cộng sản Việt Nam là gì?',o:['Nâng cao trình độ hiểu biết xã hội','Nâng cao nhận thức, hiểu biết về Đảng Cộng sản Việt Nam','Nâng cao trình độ lý luận','Nâng cao năng lực hoạt động thực tiễn'],a:1},
+];
+
+
+function safeGet(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : JSON.parse(fallback); }
+  catch(e) { return JSON.parse(fallback); }
+}
+
+const state = {
+  weakIds: safeGet('lsdang_weak', '[]'),
+  history: safeGet('lsdang_history', '{}'),
+  session: [],
+  cur: 0,
+  answered: false,
+  correct: 0,
+  wrong: 0,
+  wrongInSession: [],
+  mode: 'all',
+  lastSession: null
+};
+
+let lastMode = 'all';
+
+function save() {
+  try {
+    localStorage.setItem('lsdang_weak', JSON.stringify(state.weakIds));
+    localStorage.setItem('lsdang_history', JSON.stringify(state.history));
+  } catch(e) {}
+}
+
+function getChCount(ch) {
+  return ALL_QUESTIONS.filter(q => q.ch === ch).length;
+}
+
+function updateHome() {
+  const total = ALL_QUESTIONS.length;
+  document.getElementById('total-q').textContent = total;
+  const doneCount = Object.keys(state.history).filter(id => ALL_QUESTIONS.find(q=>q.id===id)).length;
+  document.getElementById('done-q').textContent = doneCount;
+  const weakCount = state.weakIds.filter(id => ALL_QUESTIONS.find(q=>q.id===id)).length;
+  document.getElementById('weak-count').textContent = weakCount;
+  // Hiện kết quả phiên vừa rồi nếu có, không thì hiện tổng tích lũy
+  if (state.lastSession) {
+    document.getElementById('acc-pct').textContent = state.lastSession.pct + '%';
+    const lsCard = document.getElementById('last-session-card');
+    if (lsCard) {
+      lsCard.style.display = 'block';
+      document.getElementById('ls-correct').textContent = state.lastSession.correct;
+      document.getElementById('ls-wrong').textContent = state.lastSession.wrong;
+      document.getElementById('ls-total').textContent = state.lastSession.total;
+      document.getElementById('ls-pct').textContent = state.lastSession.pct + '%';
+    }
+  } else {
+    const totalA = Object.values(state.history).reduce((s,h) => s+(h&&h.total||0), 0);
+    const totalC = Object.values(state.history).reduce((s,h) => s+(h&&h.correct||0), 0);
+    document.getElementById('acc-pct').textContent = totalA ? Math.round(totalC/totalA*100)+'%' : '—';
+    const lsCard = document.getElementById('last-session-card');
+    if (lsCard) lsCard.style.display = 'none';
+  }
+  document.getElementById('cnt-intro').textContent = getChCount('intro') + ' câu';
+  document.getElementById('cnt-ch1').textContent = getChCount('ch1') + ' câu';
+  document.getElementById('cnt-ch2').textContent = getChCount('ch2') + ' câu';
+  document.getElementById('cnt-ch3').textContent = getChCount('ch3') + ' câu';
+  if (weakCount > 0) {
+    document.getElementById('weak-btn').style.display = 'inline-block';
+    document.getElementById('weak-card').style.display = 'block';
+    document.getElementById('weak-num').textContent = weakCount;
+    const wl = document.getElementById('weak-list');
+    wl.innerHTML = '';
+    state.weakIds.slice(0,5).forEach(id => {
+      const q = ALL_QUESTIONS.find(x => x.id === id);
+      if (!q) return;
+      const h = state.history[id] || {};
+      const pct = h.total ? Math.round(h.correct/h.total*100) : 0;
+      const div = document.createElement('div');
+      div.className = 'weak-item';
+      div.innerHTML = `<span>${q.q.length>55?q.q.slice(0,55)+'…':q.q}</span><span class="badge badge-${pct>=70?'green':pct>=40?'orange':'red'}">${pct}%</span>`;
+      wl.appendChild(div);
+    });
+    if (weakCount > 5) {
+      const more = document.createElement('div');
+      more.style.cssText = 'text-align:center;font-size:0.8rem;color:#999;margin-top:0.4rem';
+      more.textContent = `... và ${weakCount-5} câu khác`;
+      document.getElementById('weak-list').appendChild(more);
+    }
+  } else {
+    document.getElementById('weak-btn').style.display = 'none';
+    document.getElementById('weak-card').style.display = 'none';
+  }
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i=a.length-1;i>0;i--) { const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+
+// === MODAL: CHƯƠNG ===
+let _pendingChapter = null;
+function openChapterModal(ch) {
+  _pendingChapter = ch;
+  const names = {intro:'Chương nhập môn',ch1:'Chương 1 (1930–1945)',ch2:'Chương 2 (1945–1975)',ch3:'Chương 3 (1975–nay)'};
+  const count = getChCount(ch);
+  document.getElementById('modal-chapter-title').textContent = names[ch]||ch;
+  document.getElementById('modal-chapter-sub').textContent = count + ' câu hỏi trong chương';
+  document.getElementById('chapter-modal').classList.add('active');
+}
+function closeChapterModal(e) {
+  if (!e || e.target === document.getElementById('chapter-modal')) {
+    document.getElementById('chapter-modal').classList.remove('active');
+  }
+}
+function startFromModal(type) {
+  document.getElementById('chapter-modal').classList.remove('active');
+  if (type === 'study') startQuiz(_pendingChapter);
+  else startQuiz('exam_'+_pendingChapter);
+}
+
+// === MODAL: CÂU SAI THEO CHƯƠNG ===
+function openWeakModal() {
+  const chDefs = [
+    {key:'all', label:'Tất cả', sub:'Ôn lại toàn bộ câu sai'},
+    {key:'intro', label:'Chương nhập môn', sub:''},
+    {key:'ch1', label:'Chương 1', sub:'1930–1945'},
+    {key:'ch2', label:'Chương 2', sub:'1945–1975'},
+    {key:'ch3', label:'Chương 3', sub:'1975–nay'},
+  ];
+  const grid = document.getElementById('weak-chapter-grid');
+  grid.innerHTML = '';
+  chDefs.forEach(def => {
+    let count;
+    if (def.key === 'all') count = state.weakIds.length;
+    else count = ALL_QUESTIONS.filter(q => q.ch === def.key && state.weakIds.includes(q.id)).length;
+    if (def.key !== 'all' && count === 0) return;
+    const btn = document.createElement('div');
+    btn.className = 'wc-btn' + (def.key==='all'?' wc-all':'');
+    btn.innerHTML = `<div class="wc-title">${def.key==='all'?'🗂 ':''+ def.label}</div><div class="wc-count">${count} câu sai</div>`;
+    btn.onclick = () => { closeWeakModal(); startQuiz('weak_'+(def.key==='all'?'all':def.key)); };
+    grid.appendChild(btn);
+  });
+  document.getElementById('weak-modal').classList.add('active');
+}
+function closeWeakModal(e) {
+  if (!e || e.target === document.getElementById('weak-modal')) {
+    document.getElementById('weak-modal').classList.remove('active');
+  }
+}
+
+function startQuiz(mode) {
+  state.mode = mode; lastMode = mode;
+  let pool;
+  if (mode === 'all') {
+    pool = shuffle(ALL_QUESTIONS).slice(0,50);
+  } else if (mode === 'weak' || mode === 'weak_all') {
+    const weakQs = ALL_QUESTIONS.filter(q => state.weakIds.includes(q.id));
+    pool = shuffle(weakQs).slice(0,Math.min(50,weakQs.length));
+  } else if (mode.startsWith('weak_')) {
+    const ch = mode.replace('weak_','');
+    const weakQs = ALL_QUESTIONS.filter(q => q.ch === ch && state.weakIds.includes(q.id));
+    pool = shuffle(weakQs).slice(0,Math.min(50,weakQs.length));
+  } else if (mode.startsWith('exam_')) {
+    const ch = mode.replace('exam_','');
+    pool = shuffle(ALL_QUESTIONS.filter(q => q.ch === ch)).slice(0,50);
+  } else {
+    pool = shuffle(ALL_QUESTIONS.filter(q => q.ch === mode));
+  }
+  state.session = pool;
+  state.cur = 0; state.correct = 0; state.wrong = 0; state.wrongInSession = [];
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('quiz').style.display = 'block';
+  const titles = {
+    all:'Thi thử ngẫu nhiên', weak:'Ôn câu còn sai', 'weak_all':'Ôn câu còn sai',
+    intro:'Ôn – Chương nhập môn', ch1:'Ôn – Chương 1', ch2:'Ôn – Chương 2', ch3:'Ôn – Chương 3',
+    exam_intro:'Thi – Chương nhập môn', exam_ch1:'Thi – Chương 1', exam_ch2:'Thi – Chương 2', exam_ch3:'Thi – Chương 3',
+    weak_intro:'Ôn sai – Chương nhập môn', weak_ch1:'Ôn sai – Chương 1', weak_ch2:'Ôn sai – Chương 2', weak_ch3:'Ôn sai – Chương 3',
+  };
+  document.getElementById('quiz-title').innerHTML = titles[mode]||mode;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = state.session[state.cur];
+  state.answered = false;
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('explain').style.display = 'none';
+  document.getElementById('q-chapter').textContent = CHAPTERS[q.ch] || q.ch;
+  document.getElementById('q-text').textContent = (state.cur+1)+'. '+q.q;
+  document.getElementById('quiz-prog').textContent = `Câu ${state.cur+1} / ${state.session.length}`;
+  document.getElementById('prog-fill').style.width = (state.cur/state.session.length*100)+'%';
+  const opts = document.getElementById('options');
+  opts.innerHTML = '';
+  const letters = ['A','B','C','D'];
+
+  // Tạo mảng index gốc rồi shuffle để đảo vị trí đáp án
+  const indices = [0,1,2,3];
+  for (let i = indices.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [indices[i],indices[j]] = [indices[j],indices[i]];
+  }
+  // Lưu shuffled index vào state để selectAnswer dùng
+  state.shuffledIndices = indices;
+
+  indices.forEach((origIdx, displayPos) => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.textContent = letters[displayPos]+'. '+q.o[origIdx];
+    btn.onclick = () => selectAnswer(displayPos);
+    opts.appendChild(btn);
+  });
+}
+
+function selectAnswer(displayPos) {
+  if (state.answered) return;
+  state.answered = true;
+  const q = state.session[state.cur];
+  // Tìm vị trí hiển thị của đáp án đúng
+  const correctDisplayPos = state.shuffledIndices.indexOf(q.a);
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(o => o.classList.add('disabled'));
+  opts[displayPos].classList.add(displayPos===correctDisplayPos?'correct':'wrong');
+  if (displayPos!==correctDisplayPos) opts[correctDisplayPos].classList.add('correct');
+  const isCorrect = displayPos===correctDisplayPos;
+  if (isCorrect) {
+    state.correct++;
+  } else {
+    state.wrong++;
+    if (!state.weakIds.includes(q.id)) state.weakIds.push(q.id);
+    state.wrongInSession.push(q);
+  }
+  if (!state.history[q.id]) state.history[q.id] = {correct:0,total:0};
+  state.history[q.id].total++;
+  if (isCorrect) { state.history[q.id].correct++; if(state.weakIds.includes(q.id) && state.history[q.id].correct>=3 && state.history[q.id].correct/state.history[q.id].total>=0.7) state.weakIds=state.weakIds.filter(id=>id!==q.id); }
+  save();
+  if (q.e) { document.getElementById('explain').style.display='block'; document.getElementById('explain').textContent='💡 '+q.e; }
+  document.getElementById('next-btn').style.display = 'inline-block';
+  document.getElementById('next-btn').textContent = state.cur===state.session.length-1?'Xem kết quả →':'Câu tiếp →';
+}
+
+function nextQuestion() {
+  if (state.cur===state.session.length-1) { showResult(); return; }
+  state.cur++;
+  renderQuestion();
+}
+
+function showResult() {
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
+  const total = state.session.length;
+  const pct = total > 0 ? Math.round(state.correct/total*100) : 0;
+  // Lưu kết quả phiên này để hiện trên home
+  state.lastSession = { correct: state.correct, wrong: state.wrong, total: total, pct: pct };
+  const circle = document.getElementById('score-circle');
+  circle.className = 'score-circle '+(pct>=70?'score-pass':'score-fail');
+  circle.innerHTML = `<span>${pct}%</span>`;
+  document.getElementById('result-title').textContent = pct>=80?'Xuất sắc!':pct>=70?'Đạt!':pct>=50?'Cần cố gắng thêm':'Cần ôn luyện nhiều hơn';
+  document.getElementById('result-sub').textContent = `Hoàn thành ${total} câu – Đúng: ${state.correct}, Sai: ${state.wrong}`;
+  document.getElementById('r-correct').textContent = state.correct;
+  document.getElementById('r-wrong').textContent = state.wrong;
+  document.getElementById('r-pct').textContent = pct+'%';
+  if (state.wrongInSession.length>0) {
+    document.getElementById('new-weak-card').style.display = 'block';
+    const nwl = document.getElementById('new-weak-list');
+    nwl.innerHTML = '';
+    // Loại trùng (cùng id)
+    const seen = new Set();
+    state.wrongInSession.forEach(q => {
+      if (seen.has(q.id)) return; seen.add(q.id);
+      const div = document.createElement('div');
+      div.className = 'weak-q';
+      div.innerHTML = `<div class="wq-text">${q.q}</div><div class="wq-ans">✓ ${q.o[q.a]}</div>`;
+      nwl.appendChild(div);
+    });
+  } else {
+    document.getElementById('new-weak-card').style.display = 'none';
+  }
+  const weakCount = state.weakIds.filter(id => ALL_QUESTIONS.find(q=>q.id===id)).length;
+  document.getElementById('res-weak-btn').style.display = weakCount>0?'inline-block':'none';
+  updateHome();
+}
+
+function goHome() {
+  document.getElementById('quiz').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('home').style.display = 'block';
+  updateHome();
+}
+
+updateHome();
+</script>
+</body>
+</html>
