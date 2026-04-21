@@ -283,7 +283,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a;
   </div>
 
   <div style="text-align:center;padding:1rem 0;">
-    <button class="btn btn-primary" onclick="startQuiz(lastMode)">Thi lại</button>
+    <button class="btn btn-primary" id="res-replay-btn" onclick="">Thi lại</button>
     <button class="btn btn-secondary" onclick="goHome()">Về trang chủ</button>
     <button class="btn btn-secondary" onclick="startQuiz('weak')" id="res-weak-btn" style="display:none">Ôn câu còn sai</button>
   </div>
@@ -1556,6 +1556,8 @@ const state = {
 })();
 
 let lastMode = 'all';
+let lastSession = [];
+let lastQuizTitle = '';
 
 function save() {
   localStorage.setItem('lsdang_weak', JSON.stringify(state.weakIds));
@@ -1819,7 +1821,8 @@ function startQuizByFilter(filterFn, title) {
   const pool = shuffle(ALL_QUESTIONS.filter(filterFn));
   state.mode = 'section';
   lastMode = 'section';
-  // Section quiz uses practice mode (câu by câu)
+  lastSession = pool.slice(); // lưu bộ câu để làm lại
+  lastQuizTitle = title;
   state.session = pool;
   state.cur = 0; state.correct = 0; state.wrong = 0; state.wrongInSession = [];
   document.getElementById('home').style.display = 'none';
@@ -1892,6 +1895,8 @@ function startQuiz(mode) {
     startExam(pool, title);
   } else {
     // Chế độ ôn → giao diện cũ từng câu
+    lastSession = pool.slice(); // lưu bộ câu để làm lại
+    lastQuizTitle = title;
     state.session = pool;
     state.cur = 0; state.correct = 0; state.wrong = 0; state.wrongInSession = [];
     document.getElementById('home').style.display = 'none';
@@ -2202,6 +2207,10 @@ function submitExam() {
     document.getElementById('new-weak-card').style.display = 'none';
   }
   document.getElementById('res-weak-btn').style.display = state.weakIds.length>0?'inline-block':'none';
+  // Chế độ thi → luôn hiện "Thi lại"
+  const replayBtn = document.getElementById('res-replay-btn');
+  replayBtn.textContent = 'Thi lại';
+  replayBtn.onclick = () => startQuiz(lastMode);
   updateHome();
 }
 
@@ -2297,7 +2306,29 @@ function showResult() {
     document.getElementById('new-weak-card').style.display = 'none';
   }
   document.getElementById('res-weak-btn').style.display = state.weakIds.length>0?'inline-block':'none';
+  // Cập nhật nút replay theo chế độ
+  const replayBtn = document.getElementById('res-replay-btn');
+  const isExamMode = lastMode === 'all' || lastMode.startsWith('exam_');
+  if (isExamMode) {
+    replayBtn.textContent = 'Thi lại';
+    replayBtn.onclick = () => startQuiz(lastMode);
+  } else {
+    replayBtn.textContent = 'Làm lại';
+    replayBtn.onclick = restartQuiz;
+  }
   updateHome();
+}
+
+function restartQuiz() {
+  // Làm lại từ đầu với đúng bộ câu cũ, reset điểm
+  state.session = lastSession.slice();
+  state.cur = 0; state.correct = 0; state.wrong = 0; state.wrongInSession = [];
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('exam').style.display = 'none';
+  document.getElementById('quiz').style.display = 'block';
+  document.getElementById('quiz-title').innerHTML = lastQuizTitle;
+  renderQuestion();
 }
 
 function goHome() {
