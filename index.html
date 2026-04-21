@@ -236,7 +236,7 @@ body { font-family: 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a;
   <div class="progress-bar"><div class="progress-fill" id="exam-prog-fill"></div></div>
   <div class="exam-layout">
     <div class="exam-panel">
-      <h4>📋 Bảng câu hỏi</h4>
+      <h4>Bảng câu hỏi</h4>
       <div class="panel-grid" id="panel-grid"></div>
       <div class="panel-legend">
         <div><span class="dot" style="background:#b71c1c;border:1.5px solid #b71c1c"></span> Câu hiện tại</div>
@@ -255,11 +255,11 @@ body { font-family: 'Segoe UI', sans-serif; background: #f5f5f0; color: #1a1a1a;
 <!-- Modal xác nhận nộp bài -->
 <div class="submit-modal" id="submit-modal">
   <div class="submit-modal-box">
-    <h3>📝 Xác nhận nộp bài</h3>
+    <h3>Xác nhận nộp bài</h3>
     <p id="submit-modal-msg">Bạn có chắc chắn muốn nộp bài không?</p>
     <div class="submit-modal-actions">
       <button class="btn-cancel-submit" onclick="closeSubmitModal()">↩ Làm tiếp</button>
-      <button class="btn-confirm-submit" onclick="submitExam()">✅ Nộp bài</button>
+      <button class="btn-confirm-submit" onclick="submitExam()">Nộp bài</button>
     </div>
   </div>
 </div>
@@ -2038,7 +2038,7 @@ function renderExamPage() {
     const submitBtn = document.createElement('button');
     submitBtn.className = 'btn btn-primary';
     submitBtn.style.background = '#2e7d32';
-    submitBtn.textContent = '📝 Nộp bài';
+    submitBtn.textContent = 'Nộp bài';
     submitBtn.onclick = openSubmitModal;
     rightGroup.appendChild(submitBtn);
   }
