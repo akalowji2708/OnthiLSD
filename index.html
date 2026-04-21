@@ -1970,12 +1970,10 @@ function renderExamPage() {
     // Track which card is visible via IntersectionObserver for panel highlight
     card.dataset.qidx = i;
 
-    // Header row: chapter + flag button
+    // Header row: flag button only (no chapter label in exam mode)
     const topRow = document.createElement('div');
     topRow.className = 'q-card-top';
-    const chSpan = document.createElement('div');
-    chSpan.className = 'q-chapter';
-    chSpan.textContent = CHAPTERS[q.ch] || q.ch;
+    const chSpan = document.createElement('div'); // empty placeholder for layout
     const flagBtn = document.createElement('button');
     flagBtn.className = 'flag-btn' + (isFlagged ? ' active' : '');
     flagBtn.innerHTML = isFlagged ? '🚩 Đã đánh dấu' : '🏳 Đánh dấu';
