@@ -130,7 +130,7 @@
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
       const dist = Math.sqrt((e.clientX - cx) ** 2 + (e.clientY - cy) ** 2);
-      if (dist < 100) {
+      if (dist < 80) {
         const p = randPos();
         btn.style.left = p.x + 'px';
         btn.style.top = p.y + 'px';
