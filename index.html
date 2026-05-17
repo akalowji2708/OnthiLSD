@@ -3877,13 +3877,13 @@ function startQuiz(mode) {
   let pool;
   if (mode === 'all') {
     pool = shuffle(ALL_QUESTIONS).slice(0,50);
- } else if (mode === 'weak' || mode === 'weak_all') {
+  } else if (mode === 'weak' || mode === 'weak_all') {
     const weakQs = ALL_QUESTIONS.filter(q => state.weakIds.includes(q.id));
-    pool = weakQs;
+    pool = shuffle(weakQs);
   } else if (mode.startsWith('weak_')) {
     const ch = mode.replace('weak_','');
     const weakQs = ALL_QUESTIONS.filter(q => q.ch === ch && state.weakIds.includes(q.id));
-    pool = weakQs;
+    pool = shuffle(weakQs);
   } else if (mode.startsWith('exam_')) {
     const ch = mode.replace('exam_','');
     pool = shuffle(ALL_QUESTIONS.filter(q => q.ch === ch)).slice(0,50);
