@@ -3805,17 +3805,64 @@ function openWeakModal() {
   const grid = document.getElementById('weak-chapter-grid');
   grid.innerHTML = '';
   chDefs.forEach(def => {
-    let count;
-    if (def.key === 'all') count = state.weakIds.length;
-    else count = ALL_QUESTIONS.filter(q => q.ch === def.key && state.weakIds.includes(q.id)).length;
+    let weakQs;
+    if (def.key === 'all') weakQs = ALL_QUESTIONS.filter(q => state.weakIds.includes(q.id));
+    else weakQs = ALL_QUESTIONS.filter(q => q.ch === def.key && state.weakIds.includes(q.id));
+    const count = weakQs.length;
     if (def.key !== 'all' && count === 0) return;
     const btn = document.createElement('div');
     btn.className = 'wc-btn' + (def.key==='all'?' wc-all':'');
     btn.innerHTML = `<div class="wc-title">${def.key==='all'?'Toàn bộ':''+ def.label}</div><div class="wc-count">${count} câu sai</div>`;
-    btn.onclick = () => { closeWeakModal(); startQuiz('weak_'+(def.key==='all'?'all':def.key)); };
+    btn.onclick = () => {
+      if (count <= 30) {
+        closeWeakModal();
+        startQuiz('weak_'+(def.key==='all'?'all':def.key));
+      } else {
+        openWeakBatchModal(def.key, weakQs);
+      }
+    };
     grid.appendChild(btn);
   });
   document.getElementById('weak-modal').classList.add('active');
+}
+
+function openWeakBatchModal(chKey, weakQs) {
+  const BATCH = 30;
+  document.getElementById('weak-modal').classList.remove('active');
+  const grid = document.getElementById('weak-chapter-grid');
+  grid.innerHTML = '';
+  const title = document.querySelector('#weak-modal .modal-title');
+  if (title) title.textContent = 'Chọn nhóm câu để ôn';
+  for (let i = 0; i < weakQs.length; i += BATCH) {
+    const batch = weakQs.slice(i, i + BATCH);
+    const from = i + 1;
+    const to = Math.min(i + BATCH, weakQs.length);
+    const btn = document.createElement('div');
+    btn.className = 'wc-btn';
+    btn.innerHTML = `<div class="wc-title">Câu ${from} – ${to}</div><div class="wc-count">${batch.length} câu</div>`;
+    btn.onclick = () => {
+      document.getElementById('weak-modal').classList.remove('active');
+      startWeakBatch(batch);
+    };
+    grid.appendChild(btn);
+  }
+  document.getElementById('weak-modal').classList.add('active');
+}
+
+function startWeakBatch(batch) {
+  lastMode = 'weak_batch';
+  lastSession = batch.slice();
+  lastQuizTitle = 'Ôn câu còn sai';
+  state.session = batch.slice();
+  state.cur = 0; state.correct = 0; state.wrong = 0; state.wrongInSession = [];
+  document.getElementById('home').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('exam').style.display = 'none';
+  const quizEl = document.getElementById('quiz');
+  quizEl.style.opacity = '1';
+  quizEl.style.display = 'block';
+  document.getElementById('quiz-title').innerHTML = 'Ôn câu còn sai';
+  renderQuestion();
 }
 function closeWeakModal(e) {
   if (!e || e.target === document.getElementById('weak-modal')) {
@@ -3830,11 +3877,11 @@ function startQuiz(mode) {
     pool = shuffle(ALL_QUESTIONS).slice(0,50);
  } else if (mode === 'weak' || mode === 'weak_all') {
     const weakQs = ALL_QUESTIONS.filter(q => state.weakIds.includes(q.id));
-    pool = shuffle(weakQs);
+    pool = weakQs;
   } else if (mode.startsWith('weak_')) {
     const ch = mode.replace('weak_','');
     const weakQs = ALL_QUESTIONS.filter(q => q.ch === ch && state.weakIds.includes(q.id));
-    pool = shuffle(weakQs);
+    pool = weakQs;
   } else if (mode.startsWith('exam_')) {
     const ch = mode.replace('exam_','');
     pool = shuffle(ALL_QUESTIONS.filter(q => q.ch === ch)).slice(0,50);
