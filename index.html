@@ -3876,7 +3876,11 @@ function startQuiz(mode) {
   state.mode = mode; lastMode = mode;
   let pool;
   if (mode === 'all') {
-    pool = shuffle(ALL_QUESTIONS).slice(0,50);
+    const p_intro = shuffle(ALL_QUESTIONS.filter(q => q.ch === 'intro')).slice(0,2);
+    const p_ch1   = shuffle(ALL_QUESTIONS.filter(q => q.ch === 'ch1')).slice(0,12);
+    const p_ch2   = shuffle(ALL_QUESTIONS.filter(q => q.ch === 'ch2')).slice(0,17);
+    const p_ch3   = shuffle(ALL_QUESTIONS.filter(q => q.ch === 'ch3')).slice(0,19);
+    pool = shuffle([...p_intro, ...p_ch1, ...p_ch2, ...p_ch3]);
   } else if (mode === 'weak' || mode === 'weak_all') {
     const weakQs = ALL_QUESTIONS.filter(q => state.weakIds.includes(q.id));
     pool = shuffle(weakQs);
