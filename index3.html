@@ -3813,10 +3813,13 @@ function openWeakModal() {
     const btn = document.createElement('div');
     btn.className = 'wc-btn' + (def.key==='all'?' wc-all':'');
     btn.innerHTML = `<div class="wc-title">${def.key==='all'?'Toàn bộ':''+ def.label}</div><div class="wc-count">${count} câu sai</div>`;
-    btn.onclick = () => {
-      if (count <= 30) {
+  btn.onclick = () => {
+      if (def.key === 'all') {
         closeWeakModal();
-        startQuiz('weak_'+(def.key==='all'?'all':def.key));
+        startQuiz('weak_all');
+      } else if (count <= 30) {
+        closeWeakModal();
+        startQuiz('weak_'+def.key);
       } else {
         openWeakBatchModal(def.key, weakQs);
       }
@@ -3853,7 +3856,7 @@ function startWeakBatch(batch) {
   lastMode = 'weak_batch';
   lastSession = batch.slice();
   lastQuizTitle = 'Ôn câu còn sai';
-  state.session = batch.slice();
+  state.session = shuffle(batch.slice());
   state.cur = 0; state.correct = 0; state.wrong = 0; state.wrongInSession = [];
   document.getElementById('home').style.display = 'none';
   document.getElementById('result').style.display = 'none';
