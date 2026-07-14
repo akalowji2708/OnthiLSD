@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Vòng quay tên</title>
+  <title>Vòng quay may mắn</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
@@ -47,19 +47,12 @@
       gap: 16px;
       min-height: 64px;
       padding: 12px clamp(16px, 4vw, 36px);
-      background: rgba(255, 255, 255, .94);
+      background: rgba(255, 255, 255, .86);
       border-bottom: 1px solid rgba(216, 222, 234, .85);
-      /* backdrop-filter chỉ bật trên màn hình đủ lớn để tránh lag mobile */
+      backdrop-filter: blur(16px);
       position: sticky;
       top: 0;
       z-index: 10;
-    }
-
-    @media (min-width: 881px) {
-      .topbar {
-        backdrop-filter: blur(16px);
-        background: rgba(255, 255, 255, .86);
-      }
     }
 
     .brand {
@@ -159,9 +152,7 @@
       cursor: pointer;
       border-radius: 50%;
       user-select: none;
-      /* GPU acceleration gợi ý */
-      will-change: transform;
-      image-rendering: auto;
+      contain: layout paint;
     }
 
     .wheel-wrap.result-pop canvas {
@@ -193,14 +184,8 @@
       filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
       z-index: 10;
       pointer-events: none;
-      /* dùng CSS class thay vì JS setTimeout cho wobble — zero JS overhead */
-      transition: transform 0.06s ease-out;
+      transition: transform 0.05s ease-out;
       transform-origin: 40px 20px;
-      will-change: transform;
-    }
-
-    .pointer.wobble {
-      transform: translateY(-50%) rotate(-14deg);
     }
 
     .center-button {
@@ -456,6 +441,25 @@
         border-bottom-width: 15px;
         border-right-width: 32px;
       }
+
+      canvas {
+        filter: drop-shadow(0 10px 18px rgba(32, 35, 49, .16));
+      }
+
+      .wheel-wrap.result-pop canvas {
+        animation-duration: .42s;
+      }
+
+      @keyframes resultPop {
+        0%, 100% {
+          transform: scale(1);
+          filter: drop-shadow(0 10px 18px rgba(32, 35, 49, .16));
+        }
+        45% {
+          transform: scale(1.018);
+          filter: drop-shadow(0 0 14px rgba(239, 68, 68, .34)) drop-shadow(0 10px 18px rgba(32, 35, 49, .16));
+        }
+      }
     }
   </style>
 </head>
@@ -463,7 +467,7 @@
   <header class="topbar">
     <div class="brand">
       <span class="brand-mark" aria-hidden="true"></span>
-      <span>Vòng quay tên</span>
+      <span>Vòng quay may mắn</span>
     </div>
   </header>
 
@@ -592,19 +596,26 @@
     let lastWinner = "";
     let audioCtx;
     let activeSegmentIndex = -1;
+    let lastFrameDraw = 0;
+    let lastTickSound = 0;
 
-    // Cache các giá trị tính toán để tránh tái tính mỗi frame
-    let _cachedEntries = [];
-    let _cachedFontSize = 52;
-    let _cachedFontStr = "";
-    let _cachedTextColor = [];
-    let _cachedLongestLen = 0;
+    function isMobileMode() {
+      return window.matchMedia("(max-width: 720px), (pointer: coarse)").matches;
+    }
 
-    // Phát hiện mobile để giảm độ phân giải canvas
-    const isMobile = window.innerWidth < 768 || ('ontouchstart' in window);
-    const CANVAS_SIZE = isMobile ? 600 : 1200;
-    canvas.width = CANVAS_SIZE;
-    canvas.height = CANVAS_SIZE;
+    function resizeWheelCanvas() {
+      const rect = canvas.getBoundingClientRect();
+      const cssSize = Math.max(280, Math.min(rect.width || 720, rect.height || rect.width || 720));
+      const dpr = Math.min(window.devicePixelRatio || 1, isMobileMode() ? 1.15 : 1.6);
+      const maxPixels = isMobileMode() ? 720 : 980;
+      const pixelSize = Math.round(Math.min(cssSize * dpr, maxPixels));
+
+      if (canvas.width !== pixelSize || canvas.height !== pixelSize) {
+        canvas.width = pixelSize;
+        canvas.height = pixelSize;
+        drawWheel();
+      }
+    }
 
     const saved = JSON.parse(localStorage.getItem("nameWheelState") || "null");
     entriesEl.value = saved?.entries || sampleEntries.join("\n");
@@ -612,13 +623,6 @@
     paletteEl.value = saved?.palette || "party";
     removeWinnerEl.checked = Boolean(saved?.removeWinner);
     soundOnEl.checked = saved?.soundOn !== false;
-
-    // Throttle input textarea để tránh vẽ lại quá nhiều lần khi gõ nhanh
-    let _inputDebounceTimer = null;
-    function scheduleDrawWheel() {
-      clearTimeout(_inputDebounceTimer);
-      _inputDebounceTimer = setTimeout(drawWheel, 80);
-    }
 
     function getEntries() {
       return entriesEl.value
@@ -680,51 +684,24 @@
       return values[0] / 4294967296;
     }
 
-    // Cache pointer DOM ref một lần duy nhất
-    const pointerEl = document.getElementById("pointer");
-    const pointerBase = document.getElementById("pointer-base");
-    let wobbleRafId = null;
-
-    function rebuildDrawCache(entries, colors) {
-      _cachedEntries = entries;
-      const count = entries.length;
-      let fontSize;
-      if (count <= 4) fontSize = isMobile ? 72 : 105;
-      else if (count <= 8) fontSize = isMobile ? 56 : 82;
-      else if (count <= 12) fontSize = isMobile ? 44 : 62;
-      else if (count <= 20) fontSize = isMobile ? 32 : 44;
-      else if (count <= 32) fontSize = isMobile ? 22 : 32;
-      else fontSize = isMobile ? 18 : 24;
-
-      _cachedLongestLen = 0;
-      for (const e of entries) if (e.length > _cachedLongestLen) _cachedLongestLen = e.length;
-      if (_cachedLongestLen > 12) {
-        fontSize = Math.max(isMobile ? 14 : 22, Math.floor(fontSize * (12 / _cachedLongestLen)));
-      }
-      _cachedFontSize = fontSize;
-      _cachedFontStr = `900 ${fontSize}px 'Outfit', 'Inter', system-ui`;
-      _cachedTextColor = entries.map((_, i) => readableText(colors[i % colors.length]));
-    }
-
     function drawWheel() {
       const entries = getEntries();
       const colors = palettes[paletteEl.value];
       const size = canvas.width;
       const center = size / 2;
-      const rimOffset = Math.round(size * 0.003);
-      const radius = center - Math.round(size * 0.032);
+      const radius = center - 38;
 
       ctx.clearRect(0, 0, size, size);
       ctx.save();
       ctx.translate(center, center);
 
-      // Draw 3D disc rim (fixed position, before rotation)
+      // Draw the 3D thickness (extrusion side-wall) underneath the wheel
       if (entries.length > 0) {
         ctx.save();
-        ctx.translate(rimOffset * 1.3, rimOffset * 2);
+        ctx.translate(4, 6); // offset to the bottom-right
         ctx.beginPath();
         ctx.arc(0, 0, radius, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(12, 15, 23, 0.25)";
+        ctx.fillStyle = "rgba(12, 15, 23, 0.25)"; // dark rim shadow
         ctx.fill();
         ctx.restore();
       }
@@ -739,32 +716,26 @@
         ctx.fillStyle = "#667085";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.font = `700 ${Math.round(size * 0.04)}px system-ui`;
+        ctx.font = "700 48px system-ui";
         ctx.fillText("Thêm mục để quay", 0, 0);
         ctx.restore();
         updateCount();
         return;
       }
 
-      // Rebuild cache nếu danh sách thay đổi (không tính lại mỗi frame)
-      if (!isSpinning || _cachedEntries !== entries) {
-        rebuildDrawCache(entries, colors);
-      }
-
       const slice = Math.PI * 2 / entries.length;
-      const textPad = Math.round(radius * 0.065);
-
-      for (let index = 0; index < entries.length; index++) {
+      entries.forEach((entry, index) => {
         const start = index * slice;
         const end = start + slice;
-        const color = colors[index % colors.length];
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.arc(0, 0, radius, start, end);
         ctx.closePath();
-        ctx.fillStyle = color;
+        ctx.fillStyle = colors[index % colors.length];
         ctx.fill();
-        ctx.strokeStyle = color;
+        
+        // Use thin matching stroke to prevent antialiasing gaps
+        ctx.strokeStyle = colors[index % colors.length];
         ctx.lineWidth = 2;
         ctx.stroke();
 
@@ -772,14 +743,32 @@
         ctx.rotate(start + slice / 2);
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
-        ctx.fillStyle = _cachedTextColor[index];
-        ctx.font = _cachedFontStr;
-        const text = entries[index].length > 20 ? `${entries[index].slice(0, 18)}...` : entries[index];
-        ctx.fillText(text, radius - textPad, 0);
-        ctx.restore();
-      }
+        ctx.fillStyle = readableText(colors[index % colors.length]);
+        
+        // Premium Adaptive Font Sizing
+        let fontSize;
+        const count = entries.length;
+        if (count <= 4) fontSize = 105;
+        else if (count <= 8) fontSize = 82;
+        else if (count <= 12) fontSize = 62;
+        else if (count <= 20) fontSize = 44;
+        else if (count <= 32) fontSize = 32;
+        else fontSize = 24;
 
-      // Subtle outer border
+        // Reduce font size if there are long entries
+        const longestEntry = entries.reduce((a, b) => a.length > b.length ? a : b, "");
+        if (longestEntry.length > 12) {
+          fontSize = Math.max(22, Math.floor(fontSize * (12 / longestEntry.length)));
+        }
+
+        fontSize = Math.max(18, Math.round(fontSize * (radius / 562)));
+        ctx.font = `900 ${fontSize}px 'Outfit', 'Inter', system-ui`;
+        const text = entry.length > 20 ? `${entry.slice(0, 18)}...` : entry;
+        ctx.fillText(text, radius - Math.max(22, 40 * (radius / 562)), 0);
+        ctx.restore();
+      });
+
+      // Draw a subtle elegant border around the wheel
       ctx.beginPath();
       ctx.arc(0, 0, radius, 0, Math.PI * 2);
       ctx.lineWidth = 4;
@@ -787,26 +776,32 @@
       ctx.stroke();
       ctx.restore();
 
-      // Pointer color sync — chỉ cập nhật khi index thay đổi
+      // Update pointer color and play tick sound in real-time
       const activeIdx = winnerIndex(entries);
+      const activeColor = colors[activeIdx % colors.length];
+      const pointerBase = document.getElementById("pointer-base");
       if (pointerBase) {
-        pointerBase.setAttribute("fill", colors[activeIdx % colors.length]);
+        pointerBase.setAttribute("fill", activeColor);
       }
 
-      // Pointer wobble dùng CSS class thay vì setTimeout
       if (isSpinning && activeIdx !== activeSegmentIndex) {
         activeSegmentIndex = activeIdx;
-        playTick();
-        if (pointerEl) {
-          pointerEl.classList.add("wobble");
-          cancelAnimationFrame(wobbleRafId);
-          wobbleRafId = requestAnimationFrame(() => {
-            requestAnimationFrame(() => pointerEl.classList.remove("wobble"));
-          });
+        const tickInterval = isMobileMode() ? 120 : 0;
+        const now = performance.now();
+        if (now - lastTickSound >= tickInterval) {
+          lastTickSound = now;
+          playTick();
+        }
+        const pointerEl = document.getElementById("pointer");
+        if (pointerEl && !isMobileMode()) {
+          pointerEl.style.transform = "translateY(-50%) rotate(-12deg)";
+          setTimeout(() => {
+            pointerEl.style.transform = "translateY(-50%) rotate(0deg)";
+          }, 60);
         }
       }
 
-      if (!isSpinning) updateCount();
+      updateCount();
     }
 
     function readableText(hex) {
@@ -837,6 +832,7 @@
 
       isSpinning = true;
       activeSegmentIndex = -1;
+      lastTickSound = 0;
       updateCount();
       playStartSound();
 
@@ -851,7 +847,11 @@
         const progress = Math.min(1, (now - start) / duration);
         const eased = 1 - Math.pow(1 - progress, 4);
         rotation = startRotation + (targetRotation - startRotation) * eased;
-        drawWheel();
+        const frameInterval = isMobileMode() ? 33 : 16;
+        if (now - lastFrameDraw >= frameInterval || progress >= 1) {
+          lastFrameDraw = now;
+          drawWheel();
+        }
 
         if (progress < 1) {
           requestAnimationFrame(frame);
@@ -920,142 +920,15 @@
       playTone(523.25, 0.24, 0.30, "sine", 0.05); // C5
     }
 
-    let noiseBuffer = null;
-    function getNoiseBuffer() {
-      if (noiseBuffer) return noiseBuffer;
-      const bufferSize = audioCtx.sampleRate * 2.5; // 2.5 seconds of noise
-      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-      }
-      noiseBuffer = buffer;
-      return noiseBuffer;
-    }
-
-    function playClap(time, volume) {
-      const bufferSource = audioCtx.createBufferSource();
-      bufferSource.buffer = getNoiseBuffer();
-      
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = "bandpass";
-      filter.frequency.value = 1000 + Math.random() * 900;
-      filter.Q.value = 1.8;
-      
-      const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.001, time);
-      gain.gain.linearRampToValueAtTime(volume, time + 0.004);
-      gain.gain.exponentialRampToValueAtTime(0.001, time + 0.05 + Math.random() * 0.05);
-      
-      bufferSource.connect(filter);
-      filter.connect(gain);
-      gain.connect(audioCtx.destination);
-      
-      const offset = Math.random() * 1.8;
-      bufferSource.start(time, offset, 0.12);
-      bufferSource.stop(time + 0.15);
-    }
-
-    function playWhistle(time, delay) {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = "sine";
-      
-      const startAt = time + delay;
-      const duration = 0.5 + Math.random() * 0.4;
-      
-      const baseFreq = 850 + Math.random() * 250;
-      const peakFreq = baseFreq * (1.5 + Math.random() * 0.3);
-      osc.frequency.setValueAtTime(baseFreq, startAt);
-      osc.frequency.exponentialRampToValueAtTime(peakFreq, startAt + 0.12);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.7, startAt + duration);
-      
-      gain.gain.setValueAtTime(0.001, startAt);
-      gain.gain.linearRampToValueAtTime(0.012, startAt + 0.08);
-      gain.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
-      
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(startAt);
-      osc.stop(startAt + duration + 0.05);
-    }
-
     function playResultSound() {
       if (!soundOnEl.checked) return;
       audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === "suspended") audioCtx.resume();
 
-      const now = audioCtx.currentTime;
-      const duration = 3.2;
-
-      // Giảm tổng số AudioNode xuống ~50 thay vì ~300:
-      // Dùng 1 GainNode master cho toàn bộ tiếng vỗ tay
-      const masterGain = audioCtx.createGain();
-      masterGain.gain.setValueAtTime(0.001, now);
-      masterGain.gain.linearRampToValueAtTime(1.0, now + 0.28);
-      masterGain.gain.setValueAtTime(1.0, now + 1.8);
-      masterGain.gain.linearRampToValueAtTime(0.001, now + duration);
-      masterGain.connect(audioCtx.destination);
-
-      // Chỉ tạo 50 tiếng vỗ tay thay vì 300
-      const clapCount = isMobile ? 28 : 50;
-      for (let i = 0; i < clapCount; i++) {
-        const bufferSource = audioCtx.createBufferSource();
-        bufferSource.buffer = getNoiseBuffer();
-
-        const filter = audioCtx.createBiquadFilter();
-        filter.type = "bandpass";
-        filter.frequency.value = 900 + Math.random() * 1000;
-        filter.Q.value = 1.6;
-
-        const clapGain = audioCtx.createGain();
-        const t = now + (i / clapCount) * duration;
-        const vol = 0.04 + Math.random() * 0.06;
-        clapGain.gain.setValueAtTime(0.001, t);
-        clapGain.gain.linearRampToValueAtTime(vol, t + 0.005);
-        clapGain.gain.exponentialRampToValueAtTime(0.001, t + 0.06 + Math.random() * 0.05);
-
-        bufferSource.connect(filter);
-        filter.connect(clapGain);
-        clapGain.connect(masterGain);
-
-        const offset = Math.random() * 1.5;
-        bufferSource.start(t, offset, 0.1);
-        bufferSource.stop(t + 0.14);
-      }
-
-      // Crowd swell
-      try {
-        const cheerOsc = audioCtx.createOscillator();
-        const cheerFilter = audioCtx.createBiquadFilter();
-        const cheerGain = audioCtx.createGain();
-        cheerOsc.type = "sawtooth";
-        cheerOsc.frequency.setValueAtTime(85, now);
-        cheerOsc.frequency.linearRampToValueAtTime(115, now + 0.8);
-        cheerOsc.frequency.linearRampToValueAtTime(80, now + duration);
-        cheerFilter.type = "bandpass";
-        cheerFilter.frequency.setValueAtTime(380, now);
-        cheerFilter.frequency.exponentialRampToValueAtTime(460, now + 0.5);
-        cheerFilter.frequency.exponentialRampToValueAtTime(320, now + duration);
-        cheerFilter.Q.value = 1.2;
-        cheerGain.gain.setValueAtTime(0.001, now);
-        cheerGain.gain.linearRampToValueAtTime(0.035, now + 0.25);
-        cheerGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-        cheerOsc.connect(cheerFilter);
-        cheerFilter.connect(cheerGain);
-        cheerGain.connect(audioCtx.destination);
-        cheerOsc.start(now);
-        cheerOsc.stop(now + duration + 0.1);
-      } catch (e) {}
-
-      playWhistle(now, 0.15);
-      playWhistle(now, 0.45);
-      if (!isMobile) playWhistle(now, 0.85);
-
-      playTone(523.25, 0, 0.18, "sine", 0.07);
-      playTone(659.25, 0.1, 0.20, "sine", 0.07);
-      playTone(783.99, 0.2, 0.28, "sine", 0.07);
-      playTone(1046.50, 0.3, 0.45, "sine", 0.05);
+      playTone(523.25, 0, 0.14, "triangle", 0.06);
+      playTone(659.25, 0.10, 0.16, "triangle", 0.065);
+      playTone(783.99, 0.21, 0.20, "triangle", 0.065);
+      playTone(1046.50, 0.34, 0.34, "triangle", 0.045);
     }
 
     function celebrateStop() {
@@ -1087,22 +960,17 @@
     function burstConfetti() {
       confetti.innerHTML = "";
       const colors = palettes[paletteEl.value];
-      // Giảm số mảnh confetti trên mobile, dùng DocumentFragment tránh reflow
-      const count = isMobile ? 36 : 72;
-      const fragment = document.createDocumentFragment();
-      for (let i = 0; i < count; i++) {
+      const pieceCount = isMobileMode() ? 24 : 70;
+      for (let i = 0; i < pieceCount; i++) {
         const piece = document.createElement("span");
         piece.className = "piece";
-        piece.style.cssText = [
-          `left:${Math.random() * 100}%`,
-          `background:${colors[i % colors.length]}`,
-          `animation-delay:${(Math.random() * 0.45).toFixed(3)}s`,
-          `transform:rotate(${Math.floor(Math.random() * 360)}deg)`
-        ].join(";");
-        fragment.appendChild(piece);
+        piece.style.left = `${secureRandom() * 100}%`;
+        piece.style.background = colors[i % colors.length];
+        piece.style.animationDelay = `${secureRandom() * .45}s`;
+        piece.style.transform = `rotate(${secureRandom() * 360}deg)`;
+        confetti.append(piece);
       }
-      confetti.appendChild(fragment);
-      setTimeout(() => confetti.innerHTML = "", 2500);
+      setTimeout(() => confetti.innerHTML = "", isMobileMode() ? 1400 : 2200);
     }
 
     document.querySelectorAll(".tab").forEach((tab) => {
@@ -1115,7 +983,7 @@
 
     entriesEl.addEventListener("input", () => {
       saveState();
-      scheduleDrawWheel();
+      drawWheel();
     });
     spinTime.addEventListener("input", () => {
       saveState();
@@ -1165,7 +1033,13 @@
       }
     });
 
-    drawWheel();
+    let resizeTimer = 0;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resizeWheelCanvas, 120);
+    }, { passive: true });
+
+    resizeWheelCanvas();
   </script>
 </body>
 </html>
