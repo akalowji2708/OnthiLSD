@@ -180,7 +180,7 @@
       width: 50px;
       height: 40px;
       transform: translateY(-50%);
-      filter: drop-shadow(0 4px 8px rgba(32, 35, 49, .25));
+      filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35));
       z-index: 10;
       pointer-events: none;
       transition: transform 0.05s ease-out;
@@ -217,9 +217,10 @@
     }
 
     .center-button:disabled {
-      color: var(--muted);
-      cursor: wait;
-      opacity: 0.9;
+      cursor: default;
+      opacity: 1;
+      background: #ffffff;
+      box-shadow: 0 8px 24px rgba(32, 35, 49, .18), 0 2px 6px rgba(32, 35, 49, .08);
     }
 
     .side {
@@ -448,9 +449,6 @@
       <span class="brand-mark" aria-hidden="true"></span>
       <span>Vòng quay tên</span>
     </div>
-    <div class="actions">
-      <button class="button" id="shuffleBtn" type="button" title="Trộn danh sách">⤨ Trộn</button>
-    </div>
   </header>
 
   <main class="app">
@@ -459,10 +457,31 @@
         <canvas id="wheel" width="1200" height="1200" aria-label="Bấm để quay vòng chọn tên"></canvas>
         <div class="pointer" id="pointer" aria-hidden="true">
           <svg viewBox="0 0 50 40" width="50" height="40" style="display: block;">
-            <path d="M45,5 L10,20 L45,35 Z" fill="#f59e0b" stroke="#ffffff" stroke-width="3" stroke-linejoin="round" />
+            <defs>
+              <linearGradient id="light-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="rgba(255, 255, 255, 0.55)" />
+                <stop offset="100%" stop-color="rgba(255, 255, 255, 0.05)" />
+              </linearGradient>
+              <linearGradient id="dark-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="rgba(0, 0, 0, 0.02)" />
+                <stop offset="100%" stop-color="rgba(0, 0, 0, 0.35)" />
+              </linearGradient>
+            </defs>
+            <!-- 3D thickness side-wall/rim overlay underneath (shifted slightly right/down for depth) -->
+            <path d="M9.5,20.5 L43.5,6 L35.5,20.5 L43.5,36 Z" fill="rgba(0, 0, 0, 0.35)" stroke="none" />
+            <!-- Base chevron shape pointing left that changes color dynamically -->
+            <path id="pointer-base" d="M8,20 L42,5 L34,20 L42,35 Z" fill="#f59e0b" stroke="none" />
+            <!-- Bevel light overlay (top half) -->
+            <path d="M8,20 L42,5 L34,20 Z" fill="url(#light-grad)" stroke="none" />
+            <!-- Bevel dark overlay (bottom half) -->
+            <path d="M8,20 L34,20 L42,35 Z" fill="url(#dark-grad)" stroke="none" />
+            <!-- Specular ridge highlight line -->
+            <line x1="8" y1="20" x2="34" y2="20" stroke="rgba(255, 255, 255, 0.6)" stroke-width="1.5" stroke-linecap="round" />
+            <!-- Specular light edge highlight on the upper rim -->
+            <path d="M8,20 L42,5" stroke="rgba(255, 255, 255, 0.45)" stroke-width="1.2" stroke-linecap="round" fill="none" />
           </svg>
         </div>
-        <button class="center-button" id="spinBtn" type="button">Quay</button>
+        <button class="center-button" id="spinBtn" type="button"></button>
       </div>
     </section>
 
@@ -479,6 +498,7 @@
         </div>
         <div class="row">
           <button class="button" id="sortBtn" type="button">A-Z</button>
+          <button class="button" id="shuffleBtn" type="button" title="Trộn danh sách">⤨ Trộn</button>
           <button class="button" id="clearBtn" type="button">Xoá</button>
           <span class="stat" id="entryCount">0 mục</span>
         </div>
@@ -634,6 +654,18 @@
       ctx.clearRect(0, 0, size, size);
       ctx.save();
       ctx.translate(center, center);
+
+      // Draw the 3D thickness (extrusion side-wall) underneath the wheel
+      if (entries.length > 0) {
+        ctx.save();
+        ctx.translate(4, 6); // offset to the bottom-right
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(12, 15, 23, 0.25)"; // dark rim shadow
+        ctx.fill();
+        ctx.restore();
+      }
+
       ctx.rotate(rotation);
 
       if (!entries.length) {
@@ -706,9 +738,9 @@
       // Update pointer color and play tick sound in real-time
       const activeIdx = winnerIndex(entries);
       const activeColor = colors[activeIdx % colors.length];
-      const pointerPath = document.querySelector(".pointer path");
-      if (pointerPath) {
-        pointerPath.setAttribute("fill", activeColor);
+      const pointerBase = document.getElementById("pointer-base");
+      if (pointerBase) {
+        pointerBase.setAttribute("fill", activeColor);
       }
 
       if (isSpinning && activeIdx !== activeSegmentIndex) {
@@ -873,14 +905,38 @@
       bufferSource.stop(time + 0.15);
     }
 
+    function playWhistle(time, delay) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = "sine";
+      
+      const startAt = time + delay;
+      const duration = 0.5 + Math.random() * 0.4;
+      
+      const baseFreq = 850 + Math.random() * 250;
+      const peakFreq = baseFreq * (1.5 + Math.random() * 0.3);
+      osc.frequency.setValueAtTime(baseFreq, startAt);
+      osc.frequency.exponentialRampToValueAtTime(peakFreq, startAt + 0.12);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.7, startAt + duration);
+      
+      gain.gain.setValueAtTime(0.001, startAt);
+      gain.gain.linearRampToValueAtTime(0.012, startAt + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, startAt + duration);
+      
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start(startAt);
+      osc.stop(startAt + duration + 0.05);
+    }
+
     function playResultSound() {
       if (!soundOnEl.checked) return;
       audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
       if (audioCtx.state === "suspended") audioCtx.resume();
       
       const now = audioCtx.currentTime;
-      const duration = 3.2;
-      const clapsPerSecond = 45;
+      const duration = 3.5;
+      const clapsPerSecond = 85;
       const totalClaps = clapsPerSecond * duration;
       
       for (let i = 0; i < totalClaps; i++) {
@@ -891,22 +947,55 @@
         let envelope = 1.0;
         if (timeOffset < 0.25) {
           envelope = timeOffset / 0.25;
-        } else if (timeOffset > 1.8) {
-          envelope = Math.max(0, 1 - (timeOffset - 1.8) / (duration - 1.8));
+        } else if (timeOffset > 2.0) {
+          envelope = Math.max(0, 1 - (timeOffset - 2.0) / (duration - 2.0));
         }
         
-        const volume = (0.03 + Math.random() * 0.05) * envelope;
+        const volume = (0.025 + Math.random() * 0.045) * envelope;
         
         if (volume > 0.002) {
           playClap(clapTime, volume);
         }
       }
       
-      // Chime overlay
-      playTone(523.25, 0, 0.15, "sine", 0.06);
-      playTone(659.25, 0.1, 0.18, "sine", 0.06);
-      playTone(783.99, 0.2, 0.25, "sine", 0.06);
-      playTone(1046.50, 0.3, 0.4, "sine", 0.04);
+      try {
+        const cheerOsc = audioCtx.createOscillator();
+        const cheerFilter = audioCtx.createBiquadFilter();
+        const cheerGain = audioCtx.createGain();
+        
+        cheerOsc.type = "sawtooth";
+        cheerOsc.frequency.setValueAtTime(85, now);
+        cheerOsc.frequency.linearRampToValueAtTime(115, now + 0.8);
+        cheerOsc.frequency.linearRampToValueAtTime(80, now + duration);
+        
+        cheerFilter.type = "bandpass";
+        cheerFilter.frequency.setValueAtTime(380, now);
+        cheerFilter.frequency.exponentialRampToValueAtTime(460, now + 0.5);
+        cheerFilter.frequency.exponentialRampToValueAtTime(320, now + duration);
+        cheerFilter.Q.value = 1.2;
+        
+        cheerGain.gain.setValueAtTime(0.001, now);
+        cheerGain.gain.linearRampToValueAtTime(0.035, now + 0.25);
+        cheerGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+        
+        cheerOsc.connect(cheerFilter);
+        cheerFilter.connect(cheerGain);
+        cheerGain.connect(audioCtx.destination);
+        
+        cheerOsc.start(now);
+        cheerOsc.stop(now + duration + 0.1);
+      } catch (e) {
+        console.warn("Could not start crowd swell: ", e);
+      }
+      
+      playWhistle(now, 0.15);
+      playWhistle(now, 0.45);
+      playWhistle(now, 0.85);
+      
+      playTone(523.25, 0, 0.18, "sine", 0.07);
+      playTone(659.25, 0.1, 0.20, "sine", 0.07);
+      playTone(783.99, 0.2, 0.28, "sine", 0.07);
+      playTone(1046.50, 0.3, 0.45, "sine", 0.05);
     }
 
     function celebrateStop() {
